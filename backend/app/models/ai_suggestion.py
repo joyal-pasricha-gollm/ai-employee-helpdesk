@@ -1,0 +1,1 @@
+"""AI suggestion ORM model."""

@@ -1450,3 +1450,273 @@ Do not start PostgreSQL integration or frontend development yet.
 Wait for my confirmation that Phase 1 works before proceeding.
 
 **FINAL EXPECTATION: Build a complete, functional Employee Helpdesk application with two role-based portals, PostgreSQL persistence, FastAPI backend, React frontend, local AI-powered ticket analysis, human-in-the-loop decisions, comprehensive testing, and professional documentation.**
+
+---
+
+## Initial backend scaffold
+
+The backend scaffold is in `backend/`. The FastAPI app currently provides
+`GET /` and `GET /health`. The additional modules, migration setup, seed script,
+and test modules establish locations for future implementation; their presence
+does not mean those features are implemented yet.
+
+```text
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── ticket.py
+│   │   ├── ticket_activity.py
+│   │   ├── ai_suggestion.py
+│   │   └── ai_feedback.py
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── user.py
+│   │   ├── ticket.py
+│   │   ├── activity.py
+│   │   ├── ai.py
+│   │   └── feedback.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── users.py
+│   │   ├── tickets.py
+│   │   ├── activities.py
+│   │   ├── ai.py
+│   │   ├── feedback.py
+│   │   └── dashboard.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── auth_service.py
+│   │   ├── user_service.py
+│   │   ├── ticket_service.py
+│   │   ├── ai_service.py
+│   │   ├── feedback_service.py
+│   │   └── dashboard_service.py
+│   ├── dependencies/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   └── permissions.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── security.py
+│       └── logging_config.py
+├── alembic/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
+├── scripts/
+│   └── seed_data.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_health.py
+│   ├── test_auth.py
+│   ├── test_tickets.py
+│   ├── test_activities.py
+│   ├── test_ai.py
+│   ├── test_feedback.py
+│   └── test_dashboard.py
+├── .env
+├── .env.example
+├── .gitignore
+├── .python-version
+├── alembic.ini
+├── requirements.in
+└── requirements.txt
+```
+
+Use Python 3.14.x, matching `backend/.python-version` and the dependency lock.
+From the repository root in PowerShell:
+
+```powershell
+cd backend
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --require-hashes -r requirements.txt
+Copy-Item .env.example .env
+python -m uvicorn app.main:app --reload
+```
+
+Open `http://127.0.0.1:8000/`, `http://127.0.0.1:8000/health`, or the
+interactive API docs at `http://127.0.0.1:8000/docs`. Run the initial tests from
+`backend/` with `python -m pytest -q`.
+
+`requirements.in` contains the direct dependency ranges. `requirements.txt` is
+the generated, hash-pinned lockfile used for installs. To intentionally update
+dependencies, install the lock-generation tool in your development environment
+with `python -m pip install pip-tools==7.7.0`, then run
+`pip-compile --generate-hashes --output-file requirements.txt requirements.in`
+from `backend/`. Review and test the resulting lockfile before committing it.
+CI verifies the locked install and tests on Windows, Linux, and macOS.
+
+The `.env` file is local-only and ignored by Git. Set `DATABASE_URL` to a
+working PostgreSQL connection before adding database-backed features, and
+replace `SECRET_KEY` with a securely generated value before enabling
+authentication. The initial liveness endpoint does not connect to PostgreSQL.
+PostgreSQL and Ollama are separate services; their required versions and
+availability must be set up separately when those integrations are implemented.
+
+## Collaborator setup (Windows PowerShell)
+
+Follow these steps for a clean, consistent backend setup. The project pins
+Python to the 3.14 minor release in `backend/.python-version` and commits a
+hash-locked dependency file. Do not install backend packages globally or use a
+different Python version for this project.
+
+### 1. Install and verify Python
+
+Install Python 3.14 (64-bit) and the Python launcher if they are not already
+installed. Open a new PowerShell window and verify the launcher can find it:
+
+```powershell
+py -3.14 --version
+```
+
+The output must start with `Python 3.14.`. If the launcher cannot find Python
+3.14, install it before continuing. Do not substitute another Python version;
+the lock and CI are currently validated for Python 3.14.
+
+### 2. Clone the repository
+
+Choose a folder for your local checkout, then clone the GitHub repository:
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME\source" | Out-Null
+Set-Location "$HOME\source"
+git clone https://github.com/joyal-pasricha-gollm/ai-employee-helpdesk.git
+Set-Location .\ai-employee-helpdesk
+git status
+```
+
+If you already cloned the repository, open PowerShell in that checkout and
+update your local `main` before creating a work branch:
+
+```powershell
+git switch main
+git pull --ff-only origin main
+```
+
+### 3. Create an isolated backend environment
+
+Run these commands from the repository root. Each collaborator should create
+their own virtual environment; do not copy or share `.venv` between machines.
+
+```powershell
+py -3.14 -m venv backend\.venv
+```
+
+Install dependencies using the committed lock file and verify the environment:
+
+```powershell
+backend\.venv\Scripts\python.exe -m pip install --require-hashes -r backend\requirements.txt
+backend\.venv\Scripts\python.exe -m pip check
+```
+
+`--require-hashes` makes pip verify package artifacts against the hashes in the
+lock. If installation fails, confirm that you are using Python 3.14 and that
+your network or package index allows access to PyPI; do not work around the
+failure by installing unpinned packages. Share the complete error with the
+team and fix the shared lock or setup instructions through a reviewed change.
+
+### 4. Set up local configuration
+
+Create your own ignored `.env` file from the example. This command preserves an
+existing local `.env`:
+
+```powershell
+if (-not (Test-Path backend\.env)) {
+    Copy-Item backend\.env.example backend\.env
+}
+```
+
+Never commit `.env`, passwords, tokens, or machine-specific settings. Only
+update `.env.example` with safe placeholder values when the team agrees on new
+configuration requirements. PostgreSQL and Ollama are separate services; the
+current health-only backend does not need them running, but future database and
+AI features will need their setup documented here.
+
+### 5. Run checks and start the backend
+
+Run tests from the repository root:
+
+```powershell
+backend\.venv\Scripts\python.exe -m pytest -q backend\tests
+```
+
+Start the development server:
+
+```powershell
+backend\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --app-dir backend
+```
+
+In a browser, check:
+
+- `http://127.0.0.1:8000/` — API welcome response
+- `http://127.0.0.1:8000/health` — health response
+- `http://127.0.0.1:8000/docs` — interactive OpenAPI documentation
+
+Stop the server with `Ctrl+C`.
+
+### 6. Work without overwriting collaborators
+
+Create a separate branch for each task. Do not commit directly to `main`:
+
+```powershell
+git switch -c feature/short-task-name
+```
+
+Before starting work and before opening a pull request, sync with the latest
+`main` and run the checks again:
+
+```powershell
+git fetch origin
+git merge origin/main
+backend\.venv\Scripts\python.exe -m pip check
+backend\.venv\Scripts\python.exe -m pytest -q backend\tests
+git status
+```
+
+Commit only the files for your task, push your branch, and open a pull request
+for review:
+
+```powershell
+git add path\to\your\changed-file
+git diff --cached --check
+git diff --cached
+git commit -m "Describe the change"
+git push -u origin feature/short-task-name
+```
+
+Do not stage `.env`, `.venv`, local database files, or the assessment PDF.
+Coordinate database model and Alembic migration changes with the team; avoid
+editing the same migration or shared API schema in parallel without agreement.
+
+### 7. Updating dependencies (maintainers)
+
+Do not independently upgrade packages or edit generated pins by hand. To
+intentionally change dependencies, start from the agreed Python 3.14
+environment, update `backend/requirements.in`, then regenerate and test the
+lock:
+
+```powershell
+Set-Location backend
+.\.venv\Scripts\python.exe -m pip install pip-tools==7.7.0
+.\.venv\Scripts\python.exe -m piptools compile --generate-hashes --output-file requirements.txt requirements.in
+.\.venv\Scripts\python.exe -m pip install --require-hashes -r requirements.txt
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pytest -q
+Set-Location ..
+git diff -- backend\requirements.in backend\requirements.txt
+```
+
+Include both dependency files in the same reviewed pull request. CI also checks
+the locked install, dependency consistency, and tests on Windows, Linux, and
+macOS. These safeguards reduce Python dependency drift; they cannot guarantee
+that unrelated local services (PostgreSQL or Ollama) are configured identically.

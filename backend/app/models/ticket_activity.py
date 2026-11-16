@@ -1,0 +1,1 @@
+"""Ticket activity ORM model."""
