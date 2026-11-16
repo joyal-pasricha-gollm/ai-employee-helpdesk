@@ -1554,6 +1554,10 @@ dependencies, install the lock-generation tool in your development environment
 with `python -m pip install pip-tools==7.7.0`, then run
 `pip-compile --generate-hashes --output-file requirements.txt requirements.in`
 from `backend/`. Review and test the resulting lockfile before committing it.
+The dependency list uses plain Uvicorn instead of its optional `standard`
+extras so the generated lock does not omit platform-specific extras when
+compiled on one operating system; Uvicorn's built-in `--reload` remains
+available.
 CI verifies the locked install and tests on Windows, Linux, and macOS.
 
 The `.env` file is local-only and ignored by Git. Set `DATABASE_URL` to a
