@@ -1,8 +1,14 @@
 """FastAPI application entry point."""
 
+import logging
+
 from fastapi import FastAPI
 
-from app.routes import auth
+from app.routes import ai, auth, feedback
+
+# Show INFO-level app events (logins, AI analysis, decisions) in the server console.
+# Log messages never contain passwords, tokens or ticket text.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 app = FastAPI(
     title="Employee Helpdesk API",
@@ -11,6 +17,8 @@ app = FastAPI(
 )
 
 app.include_router(auth.router)
+app.include_router(ai.router)
+app.include_router(feedback.router)
 
 
 @app.get("/", tags=["health"])

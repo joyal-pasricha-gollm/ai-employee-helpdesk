@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    # Local AI (Ollama). Each teammate can override these in their own .env.
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:3b"
+    ollama_timeout_seconds: float = 120.0
+
 
 @lru_cache
 def get_settings() -> Settings:
