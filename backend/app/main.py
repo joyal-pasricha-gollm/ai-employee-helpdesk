@@ -2,11 +2,15 @@
 
 from fastapi import FastAPI
 
+from app.routes import auth
+
 app = FastAPI(
     title="Employee Helpdesk API",
     version="0.1.0",
     description="Backend API for the Employee Helpdesk application.",
 )
+
+app.include_router(auth.router)
 
 
 @app.get("/", tags=["health"])
